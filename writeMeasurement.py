@@ -43,18 +43,20 @@ if location_id == "":
     host_id = input("Enter host_id: ")
     # Split the location input into a list of strings, then convert to a list of floats
     host_location = list(map(float, input("Enter host_location (comma-separated): ").split(",")))
+    # Build the host_location string
+    host_location_str = "{" + ",".join(map(str, host_location)) + "}"
     description = input("Enter description: ")
     measurement_type = input("Enter measurement type: ")
     measured_by = input("Enter measured by: ")
 
     query = """
     INSERT INTO repeated_measurements (host_id, host_location, description, measurement_type, measured_by)
-    VALUES (%(host_id)s, ARRAY[%(host_location)s], %(description)s, %(measurement_type)s, %(measured_by)s)
+    VALUES (%(host_id)s, %(host_location)s::numeric[], %(description)s, %(measurement_type)s, %(measured_by)s)
     RETURNING measurements_id;
     """
 
     # Execute the query
-    cursor.execute(query, {'host_id': host_id, 'host_location': host_location, 'description': description,
+    cursor.execute(query, {'host_id': host_id, 'host_location': host_location_str, 'description': description,
                            'measurement_type': measurement_type, 'measured_by': measured_by})
     location_id = cursor.fetchone()[0]
     cnx.commit()
