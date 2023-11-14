@@ -21,22 +21,30 @@ cnx = psycopg2.connect(
 # Create a cursor object
 cursor = cnx.cursor()
 
-# SQL query to retrieve all measurement location IDs
-location_id_query = "SELECT measurements_id FROM repeated_measurements"
+# SQL query to retrieve all columns from the repeated_measurements table
+query = "SELECT * FROM repeated_measurements"
 
 # Execute the query
-cursor.execute(location_id_query)
+cursor.execute(query)
 
 # Fetch all the results
-location_ids = cursor.fetchall()
+rows = cursor.fetchall()
 
-# Print the list of measurement location IDs
-print("Current measurement location IDs:")
-for row in location_ids:
-    print(row[0])
+# Print the columns
+columns = [desc[0] for desc in cursor.description]
+print("\t".join(columns))
+
+# Print the rows
+for row in rows:
+    print("\t".join(map(str, row)))
+
+# Fetch IDs to check against
+id_query = "SELECT measurements_id FROM repeated_measurements"
+cursor.execute(id_query)
+location_ids = [item[0] for item in cursor.fetchall()]
 
 # Ask for user input for measurement location ID
-location_id = input("What is the measurement location ID? (Leave empty to create a new one): ")
+location_id = input("What is the relevant measurements_id? (Leave empty to create a new one): ")
 
 # If measurement location ID is empty, prompt for a new entry in the 'repeated_measurements' table
 if location_id == "":
@@ -46,22 +54,19 @@ if location_id == "":
     # Build the host_location string
     host_location_str = "{" + ",".join(map(str, host_location)) + "}"
     description = input("Enter description: ")
-    measurement_type = input("Enter measurement type: ")
-    measured_by = input("Enter measured by: ")
 
     query = """
-    INSERT INTO repeated_measurements (host_id, host_location, description, measurement_type, measured_by)
-    VALUES (%(host_id)s, %(host_location)s::numeric[], %(description)s, %(measurement_type)s, %(measured_by)s)
+    INSERT INTO repeated_measurements (host_id, host_location, description)
+    VALUES (%(host_id)s, %(host_location)s::numeric[], %(description)s)
     RETURNING measurements_id;
     """
 
     # Execute the query
-    cursor.execute(query, {'host_id': host_id, 'host_location': host_location_str, 'description': description,
-                           'measurement_type': measurement_type, 'measured_by': measured_by})
+    cursor.execute(query, {'host_id': host_id, 'host_location': host_location_str, 'description': description})
     location_id = cursor.fetchone()[0]
     cnx.commit()
 
-elif int(location_id) not in [item[0] for item in location_ids]:
+elif int(location_id) not in location_ids:
     print("Invalid measurement location ID.")
     cursor.close()
     cnx.close()

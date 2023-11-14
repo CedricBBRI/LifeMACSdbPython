@@ -31,18 +31,18 @@ host_id = input("Please enter one of the above Host_IDs: ")
 
 # SQL query
 query = """
-SELECT M.Crack_ID, M.Time_of_Measurement, M.Length, M.Width, M.Depth
-FROM Measurements M
+SELECT M.crack_id, M.time_of_measurement, M.length, M.width, M.depth
+FROM public.measurements_cracks M
 INNER JOIN (
-    SELECT Crack_ID, MAX(Time_of_Measurement) AS Latest_Time
-    FROM Measurements
-    WHERE Crack_ID IN (
-        SELECT Crack_ID 
-        FROM Cracks 
-        WHERE Host_ID = %(host_id)s
+    SELECT M_inner.crack_id, MAX(M_inner.time_of_measurement) AS Latest_Time
+    FROM public.measurements_cracks M_inner
+    WHERE M_inner.crack_id IN (
+        SELECT C.crack_id
+        FROM public.cracks C
+        WHERE C.Host_ID = %(host_id)s
     )
-    GROUP BY Crack_ID
-) SubQ ON M.Crack_ID = SubQ.Crack_ID AND M.Time_of_Measurement = SubQ.Latest_Time;
+    GROUP BY M_inner.crack_id
+) SubQ ON M.crack_id = SubQ.crack_id AND M.time_of_measurement = SubQ.Latest_Time;
 """
 
 # Execute the query with a parameter
