@@ -1,0 +1,80 @@
+import requests
+from openai import OpenAI
+import time
+import json
+
+client = OpenAI()  # assistant id: asst_u2S1vmyWfjW0CsGYKsYiShV6
+
+assistant_id = "asst_u2S1vmyWfjW0CsGYKsYiShV6"
+assistant_id_output = "asst_Vl8ptjfPI1SMzId3qsNH8AZh"
+user_input = input("What are you looking for?\n")
+
+
+def submit_message(assistant_id, thread, user_message):
+    client.beta.threads.messages.create(
+        thread_id=thread.id, role="user", content=user_message
+    )
+    return client.beta.threads.runs.create(
+        thread_id=thread.id,
+        assistant_id=assistant_id,
+    )
+
+
+def get_response(thread):
+    return client.beta.threads.messages.list(thread_id=thread.id)
+
+
+def create_thread_and_run(user_input, assistant_id):
+    thread = client.beta.threads.create()
+    run = submit_message(assistant_id, thread, user_input)
+    return thread, run
+
+
+# Waiting in a loop
+def wait_on_run(run, thread):
+    while run.status == "queued" or run.status == "in_progress":
+        run = client.beta.threads.runs.retrieve(
+            thread_id=thread.id,
+            run_id=run.id,
+        )
+        time.sleep(0.5)
+    return run
+
+
+# Running connection
+thread1, run1 = create_thread_and_run(user_input, assistant_id)
+
+# Wait for Run 1
+run1 = wait_on_run(run1, thread1)
+response1 = get_response(thread1)
+response1_text = response1.data[0].content[0].text.value
+print(response1_text)
+
+# API endpoint
+url = 'http://91.177.177.112:4000/query'
+
+# SQL query data
+query_data = {
+    # "query": "SELECT DISTINCT Host_ID FROM Cracks;"
+    "query": response1_text
+}
+
+# Sending the POST request
+response = requests.post(url, json=query_data)
+
+#print(query_data)
+
+# Handling the response
+if response.status_code == 200:
+    print("Success: ", response.json())
+else:
+    print("Error: ", response.status_code)
+
+thread2, run2 = create_thread_and_run("Input:\n" + user_input + "\n\nOutput:\n" + json.dumps(response.json()),
+                                      assistant_id_output)
+
+# Wait for Run 2
+run2 = wait_on_run(run2, thread2)
+response2 = get_response(thread2)
+response2_text = response2.data[0].content[0].text.value
+print(response2_text)
