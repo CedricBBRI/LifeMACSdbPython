@@ -13,7 +13,7 @@ client = OpenAI()
 
 assistant_id = "asst_zes9q5sYVHyXmbdDnDuMdU9E" # Takes question from client, turns it into python code to run
 assistant_id_output = "y" # Takes result from Python code from previous assistant and interprets it
-user_input = input("What are you looking for?\n")
+user_input = input("Q: ")
 
 def submit_message(assistant_id, thread, user_message):
     client.beta.threads.messages.create(
@@ -45,18 +45,28 @@ def wait_on_run(run, thread):
         time.sleep(0.5)
     return run
 
+def process_bot_response(response):
+    # Check if the response starts with 'TEXT'
+    if response.startswith("TEXT"):
+        # Print everything after 'TEXT'
+        print(response[4:])  # 4 is the length of 'TEXT'
+    else:
+        # Exec if it doesn't
+        execution_result = exec(response)
 
 # Running connection
 thread1, run1 = create_thread_and_run(user_input, assistant_id)
 
-# Wait for Run 1
-run1 = wait_on_run(run1, thread1)
-response1 = get_response(thread1)
-response1_text = response1.data[0].content[0].text.value
-print(response1_text)
+while True:
+    # Wait for Run 1
+    run1 = wait_on_run(run1, thread1)
+    response1 = get_response(thread1)
+    response1_text = response1.data[0].content[0].text.value
+    #print(response1_text)
+    process_bot_response(response1_text)
+    user_input = input("Q: ")
+    run1 = submit_message(assistant_id, thread1, user_input)
 
-execution_result = exec(response1_text)
-print("Execution Result:", execution_result)
 
 # thread2, run2 = create_thread_and_run(execution_result,
 #                                       assistant_id_output)
