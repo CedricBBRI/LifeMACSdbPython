@@ -4,10 +4,16 @@ import time
 import ifcopenshell
 import ifcopenshell.geom
 from datetime import datetime
+import io
+import contextlib
 
 # Open the IFC file
-ifc_file = ifcopenshell.open("C:\\Users\\cdri\\Downloads\\23134_Buildwise_REVIT_vB\\23134_Buildwise_REVIT_vB.ifc")
+#ifc_file = ifcopenshell.open("C:\\Users\\cdri\\Downloads\\23134_Buildwise_REVIT_vB\\23134_Buildwise_REVIT_vB.ifc")
+ifc_file = ifcopenshell.open("C:\\Users\\cdri\\Downloads\\23134_Buildwise_REVIT_vB\\B4WArch.ifc")
 
+#TestEnv
+exec('print(dir())')
+#EndTestEnv
 
 client = OpenAI()
 
@@ -47,12 +53,29 @@ def wait_on_run(run, thread):
 
 def process_bot_response(response):
     # Check if the response starts with 'TEXT'
+    isText = False
+    response.strip()
+    #print(response)
     if response.startswith("TEXT"):
         # Print everything after 'TEXT'
-        print(response[4:])  # 4 is the length of 'TEXT'
+        response = response[4:]
+        execution_result = response  # 4 is the length of 'TEXT'
+        isText = True
+    elif response.startswith("```python") and response.endswith("```"):
+        print("starts w python\n")
+        response = response[9:-3]
+        print(response)
     else:
-        # Exec if it doesn't
-        execution_result = exec(response)
+        print("good code\n")
+        print(response)
+    if isText is False:
+        # Redirect standard output to capture the execution result
+        with io.StringIO() as buf, contextlib.redirect_stdout(buf):
+            exec(response, globals())
+            # Get the output of the executed code
+            execution_result = buf.getvalue().strip()
+
+    return execution_result, isText
 
 # Running connection
 thread1, run1 = create_thread_and_run(user_input, assistant_id)
@@ -62,9 +85,14 @@ while True:
     run1 = wait_on_run(run1, thread1)
     response1 = get_response(thread1)
     response1_text = response1.data[0].content[0].text.value
-    #print(response1_text)
-    process_bot_response(response1_text)
-    user_input = input("Q: ")
+    #print("\n", response1_text, "\n")
+    execution_result, isText = process_bot_response(response1_text)
+    print(execution_result, "\n")
+    if isText:
+        user_input = input("Q: ")
+    else:
+        user_input = "Exec result: " + execution_result
+    print(user_input)
     run1 = submit_message(assistant_id, thread1, user_input)
 
 
