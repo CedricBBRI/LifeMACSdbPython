@@ -54,6 +54,7 @@ def wait_on_run(run, thread):
 def process_bot_response(response):
     # Check if the response starts with 'TEXT'
     isText = False
+    execution_result = "Error occurred"
     response.strip()
     #print(response)
     if response.startswith("TEXT"):
@@ -70,10 +71,13 @@ def process_bot_response(response):
         print(response)
     if isText is False:
         # Redirect standard output to capture the execution result
-        with io.StringIO() as buf, contextlib.redirect_stdout(buf):
-            exec(response, globals())
-            # Get the output of the executed code
-            execution_result = buf.getvalue().strip()
+        try:
+            with io.StringIO() as buf, contextlib.redirect_stdout(buf):
+                exec(response, globals())
+                # Get the output of the executed code
+                execution_result = buf.getvalue().strip()
+        except:
+            print("Error: ", response)
 
     return execution_result, isText
 
