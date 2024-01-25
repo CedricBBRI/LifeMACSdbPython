@@ -17,8 +17,7 @@ exec('print(dir())')
 
 client = OpenAI()
 
-assistant_id = "asst_zes9q5sYVHyXmbdDnDuMdU9E" # Takes question from client, turns it into python code to run
-assistant_id_output = "y" # Takes result from Python code from previous assistant and interprets it
+assistant_id = "asst_zes9q5sYVHyXmbdDnDuMdU9E" # Takes question from client, turns it into python code to run or interprets answers
 user_input = input("Q: ")
 
 def submit_message(assistant_id, thread, user_message):
